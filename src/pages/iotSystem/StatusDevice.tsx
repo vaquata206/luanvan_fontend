@@ -1,10 +1,13 @@
 import ReactLoading from 'react-loading';
 
 
-const StatusDevice = ({ data, chaincodes }: { data: any, chaincodes: any[] }) => {
+const StatusDevice = ({ data, chaincodes }: { data: any, chaincodes: any[] | undefined }) => {
+  debugger
   var t = new Date(data.Time);
+  console.log("--status")
+  console.log(chaincodes);
   var status = 0;
-  if (chaincodes.length > 0){
+  if (chaincodes != undefined && chaincodes != null){
     var chaincode = chaincodes.find((c: any) => t >= c.fromDate && t <= c.toDate);
     if (chaincode) {
       status = chaincode.status ? 1 : 2

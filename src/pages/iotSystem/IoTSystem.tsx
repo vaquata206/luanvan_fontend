@@ -77,7 +77,7 @@ const IoTSystem = () => {
   const [dataTable, setDataTable] = useState<any[]>([]);
   const [dataIoT, setDataIot] = useState<IoTValue[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [chaincodes, setChaincodes] = useState<[]>([]);
+  const [chaincodes, setChaincodes] = useState<[]>();
 
   useEffect(() => {
     getList().then((d) => {
@@ -116,9 +116,9 @@ const IoTSystem = () => {
     search();
   }, [selectedDevice, fromDate, toDate])
 
-  const verifyData = async () => {
-    setChaincodes([]);
-    var data = await verifyDataIot();
+  const verifyData = async (sensorId: number) => {
+    //setChaincodes([]);
+    var data = await verifyDataIot(sensorId);
     var chanincodes = (data || []).map((x: any) => {
       return {
         fromDate: new Date(x.fromDate),
@@ -126,7 +126,9 @@ const IoTSystem = () => {
         status: x.status
       }
     });
-
+    
+    console.log("cc");
+    console.log(chanincodes)
     setChaincodes(chanincodes);
   }
 
@@ -136,10 +138,11 @@ const IoTSystem = () => {
     }
 
     setIsSearching(true);
+    var sensorId = selectedDevice == null? 0: selectedDevice.value;
     var data = await searchDataIot({
       fromDate: formatDateTimeToString(fromDate),
       toDate: formatDateTimeToString(toDate),
-      sensorId: selectedDevice == null? 0: selectedDevice.value
+      sensorId: sensorId
     }).finally(() => {
       setIsSearching(false);
     });
@@ -153,10 +156,12 @@ const IoTSystem = () => {
         Status: 0 // đang check
       }
     });
-
+    if (sensorId > 0){
+      await verifyData(sensorId);
+    }
+    
     setDataIot(data);
     setDataTable(d);
-    verifyData();
   }
 
   return (
