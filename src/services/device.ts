@@ -15,3 +15,8 @@ export const searchDataIot = async (d: SearchIoT) => {
     var req = await intance.post('/iot/search', d);
     return req.data;
 }
+
+export const verifyDataIot = async () => {
+    var req = await intance.get('/iot/verify');
+    return req.data;
+}

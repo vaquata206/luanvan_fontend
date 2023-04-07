@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import {ContentHeader} from '@components';
 import DateTimePicker from 'react-datetime-picker'
 import Select from 'react-select'
-import { getList, searchDataIot } from '@app/services/device';
+import { getList, searchDataIot, verifyDataIot } from '@app/services/device';
 import { Device } from '@app/modals/Device';
 import BootstrapTable from 'react-bootstrap-table-next';
 import paginationFactory from 'react-bootstrap-table2-paginator';
@@ -64,12 +64,22 @@ const options = {
 };
 
 function safetyFormat(cell: any, row: any) {
-  if (false){
-    return <ReactLoading type='spinningBubbles' color="#000000" height={'20px'} width={'20px'}/>
-  }else{
-    return <div className="icon" style={{color: "red"}}>
-              <i className={`ion ion-close`} />
-          </div>
+  switch (row.Status){
+    case 0: 
+      return <ReactLoading type='spinningBubbles' color="#000000" height={'20px'} width={'20px'}/>
+    case 1:
+      return <div className="icon" style={{color: "green"}}>
+                <i className={`ion ion-checkmark-circled`} />
+            </div>
+    case 2: 
+      return <div className="icon" style={{color: "red"}}>
+                <i className={`ion ion-close`} />
+            </div>
+    default:
+      return <div className="icon">
+                <i className={`ion ion-alert`} />
+            </div>
+
   }
 }
 
@@ -80,7 +90,7 @@ const IoTSystem = () => {
   const [selectedDevice, setSelectedDevice] = useState<SelectOption|null>(null);
   const [fromDate, setFromDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
   const [toDate, setToDate] = useState(new Date());
-  const [dataTable, setDataTable] = useState<[]>([]);
+  const [dataTable, setDataTable] = useState<any[]>([]);
   const [dataIoT, setDataIot] = useState<IoTValue[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -121,13 +131,53 @@ const IoTSystem = () => {
     search();
   }, [selectedDevice, fromDate, toDate])
   
-  const verifyData = () => {
-    setTimeout(() => {
-      dataTable.forEach((element: any) => {
-        element.Status = 1;
-      });
-      setDataTable(dataTable);
-    }, 1000);
+  useEffect(() => {
+    verifyData();
+  }, [dataIoT])
+
+  const verifyData = async () => {
+    var data = await verifyDataIot();
+    debugger;
+    var chanincodes = (data || []).map((x: any) => {
+      return {
+        fromDate: new Date(x.fromDate),
+        toDate: new Date(x.toDate),
+        status: x.status
+      }
+    });
+
+    /*
+    var dtable: any[] = (dataTable || []).map((x: any) => {
+
+      var t = new Date(x.Time);
+      var chaincode = chanincodes.find((c: any) => t >= c.fromDate && t <= c.toDate);
+      var status = 3; // chua check
+      if (chaincode){
+        status = chaincode.status? 1: 2
+      }
+
+      return {
+        ... x,
+        status: status
+      };
+    });
+    */
+    var list:any[] = [];
+    (dataTable || []).forEach((x: any) => {
+
+      var t = new Date(x.Time);
+      var chaincode = chanincodes.find((c: any) => t >= c.fromDate && t <= c.toDate);
+      var status = 3; // chua check
+      if (chaincode){
+        status = chaincode.status? 1: 2
+      }
+
+      x.Status = status;
+      list.push(x);
+    });
+
+    console.log(list);
+    setDataTable([]);
   }
 
   const search = async () => {
@@ -136,7 +186,6 @@ const IoTSystem = () => {
     }
 
     setIsSearching(true);
-    console.log(fromDate);
     var data = await searchDataIot({
       fromDate: formatDateTimeToString(fromDate),
       toDate: formatDateTimeToString(toDate),
@@ -145,17 +194,17 @@ const IoTSystem = () => {
       setIsSearching(false);
     });
 
-    setDataIot(data);
     var d = (data || []).map((x: IoTValue, index: number) => {
       return {
         key: index + 1,
         id: x.Id,
-        Time: x.Time.toLocaleString(DateTime.DATETIME_SHORT_WITH_SECONDS),
+        Time: x.Time,
         Value: x.Value,
         Status: 0 // đang check
       }
     });
 
+    setDataIot(data);
     setDataTable(d);
     //verifyData();
   }
