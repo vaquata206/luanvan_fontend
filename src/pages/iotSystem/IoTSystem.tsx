@@ -8,12 +8,12 @@ import { Device } from '@app/modals/Device';
 import BootstrapTable from 'react-bootstrap-table-next';
 import paginationFactory from 'react-bootstrap-table2-paginator';
 import { IoTValue } from '@app/modals/IoTValue';
-import { DateTime } from 'luxon';
 import ReactLoading from 'react-loading';
 
 import './iotsystem.css'
 import { PfButton } from '@profabric/react-components';
 import { formatDateTimeToString } from '@app/utils/helpers';
+import StatusDevice from './StatusDevice';
 
 interface GroupedOption {
   id: number;
@@ -25,28 +25,6 @@ interface SelectOption {
   value: number;
   label: string;
 };
-
-const columns = [{
-  dataField: "key",
-  text: 'STT'
-}, {
-  dataField: 'Time',
-  text: 'Thời gian'
-}, {
-  dataField: 'Value',
-  text: 'Giá trị'
-},
-{
-  dataField: 'Status',
-  text: 'TT',
-  headerClasses: 'tb-status-header',
-  /*
-  headerStyle: (a: any, b: any) => {
-    return { width: '30px', textAlign: 'center' };
-  },*/
-  formatter: safetyFormat
-}
-];
 
 const options = {
   //pageStartIndex: 1,
@@ -63,27 +41,33 @@ const options = {
   }
 };
 
-function safetyFormat(cell: any, row: any) {
-  switch (row.Status){
-    case 0: 
-      return <ReactLoading type='spinningBubbles' color="#000000" height={'20px'} width={'20px'}/>
-    case 1:
-      return <div className="icon" style={{color: "green"}}>
-                <i className={`ion ion-checkmark-circled`} />
-            </div>
-    case 2: 
-      return <div className="icon" style={{color: "red"}}>
-                <i className={`ion ion-close`} />
-            </div>
-    default:
-      return <div className="icon">
-                <i className={`ion ion-alert`} />
-            </div>
-
-  }
-}
-
 const IoTSystem = () => {
+  
+  const columns = [{
+    dataField: "key",
+    text: 'STT'
+  }, {
+    dataField: 'Time',
+    text: 'Thời gian'
+  }, {
+    dataField: 'Value',
+    text: 'Giá trị'
+  },
+  {
+    dataField: 'Status',
+    text: 'TT',
+    headerClasses: 'tb-status-header',
+    /*
+    headerStyle: (a: any, b: any) => {
+      return { width: '30px', textAlign: 'center' };
+    },*/
+    formatter: safetyFormat
+  }
+  ];
+
+  function safetyFormat(cell: any, row: any) {
+    return <StatusDevice data={row} chaincodes={chaincodes} />
+  }
 
   const now = new Date();
   const [groupDevices, setGroupDevices] = useState<GroupedOption[]>([]);
@@ -93,6 +77,7 @@ const IoTSystem = () => {
   const [dataTable, setDataTable] = useState<any[]>([]);
   const [dataIoT, setDataIot] = useState<IoTValue[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [chaincodes, setChaincodes] = useState<[]>([]);
 
   useEffect(() => {
     getList().then((d) => {
@@ -130,14 +115,10 @@ const IoTSystem = () => {
   useEffect(() => {
     search();
   }, [selectedDevice, fromDate, toDate])
-  
-  useEffect(() => {
-    verifyData();
-  }, [dataIoT])
 
   const verifyData = async () => {
+    setChaincodes([]);
     var data = await verifyDataIot();
-    debugger;
     var chanincodes = (data || []).map((x: any) => {
       return {
         fromDate: new Date(x.fromDate),
@@ -146,38 +127,7 @@ const IoTSystem = () => {
       }
     });
 
-    /*
-    var dtable: any[] = (dataTable || []).map((x: any) => {
-
-      var t = new Date(x.Time);
-      var chaincode = chanincodes.find((c: any) => t >= c.fromDate && t <= c.toDate);
-      var status = 3; // chua check
-      if (chaincode){
-        status = chaincode.status? 1: 2
-      }
-
-      return {
-        ... x,
-        status: status
-      };
-    });
-    */
-    var list:any[] = [];
-    (dataTable || []).forEach((x: any) => {
-
-      var t = new Date(x.Time);
-      var chaincode = chanincodes.find((c: any) => t >= c.fromDate && t <= c.toDate);
-      var status = 3; // chua check
-      if (chaincode){
-        status = chaincode.status? 1: 2
-      }
-
-      x.Status = status;
-      list.push(x);
-    });
-
-    console.log(list);
-    setDataTable([]);
+    setChaincodes(chanincodes);
   }
 
   const search = async () => {
@@ -206,7 +156,7 @@ const IoTSystem = () => {
 
     setDataIot(data);
     setDataTable(d);
-    //verifyData();
+    verifyData();
   }
 
   return (
